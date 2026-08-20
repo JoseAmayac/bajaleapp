@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from 'react'
+import { useNavigate, Navigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { Input } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
 
 export function LoginPage() {
-  const { signIn, signUp } = useAuth()
+  const { signIn, signUp, session } = useAuth()
+  const navigate = useNavigate()
   const [isRegister, setIsRegister] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -26,9 +28,13 @@ export function LoginPage() {
       setError(error.message)
     } else if (isRegister) {
       setMessage('Revisa tu correo para confirmar tu cuenta.')
+    } else {
+      navigate('/', { replace: true })
     }
     setLoading(false)
   }
+
+  if (session) return <Navigate to="/" replace />
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] flex flex-col items-center justify-center p-6">
