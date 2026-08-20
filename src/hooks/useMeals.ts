@@ -3,10 +3,12 @@ import { supabase } from "../lib/supabase";
 import type { DailyMeal } from "../types";
 
 export function useMeals(date: string) {
-  const [meals, setMeals] = useState<(DailyMeal & { signed_url?: string })[]>(
-    [],
-  );
+  const [meals, setMeals] = useState<(DailyMeal & { signed_url?: string })[]>([]);
   const [loading, setLoading] = useState(true);
+  const [aiErrors, setAiErrors] = useState<Record<string, string>>({});
+
+  const setAiError = (id: string, msg: string | null) =>
+    setAiErrors(prev => msg ? { ...prev, [id]: msg } : Object.fromEntries(Object.entries(prev).filter(([k]) => k !== id)))
 
   const getSignedUrls = async (rows: DailyMeal[]) => {
     const withImages = rows.filter((m) => m.image_url);
@@ -91,17 +93,19 @@ export function useMeals(date: string) {
 
     setMeals((prev) => [...prev, data]);
 
-    // Solo llamar a la IA si el usuario no ingresó calorías manualmente
-    if (!hasManualNutrition) {
-      supabase.functions
-        .invoke("estimate-nutrition", {
-          body: {
-            meal_id: data.id,
-            description: data.description,
-            image_url: data.image_url,
-          },
-        })
-        .then(() => fetch());
+    if (!hasManualNutrition) estimateNutrition(data);
+  };
+
+  const estimateNutrition = async (meal: DailyMeal) => {
+    setAiError(meal.id, null);
+    const { error } = await supabase.functions.invoke("estimate-nutrition", {
+      body: { meal_id: meal.id, description: meal.description, image_url: meal.image_url },
+    });
+    if (error) {
+      setAiError(meal.id, error.message ?? 'Error al estimar nutrición');
+    } else {
+      setAiError(meal.id, null);
+      fetch();
     }
   };
 
@@ -131,7 +135,9 @@ export function useMeals(date: string) {
   return {
     meals,
     loading,
+    aiErrors,
     addMeal,
+    estimateNutrition,
     updateMeal,
     deleteMeal,
     totalCalories,

@@ -16,7 +16,7 @@ const MEAL_LABELS: Record<DailyMeal['meal_type'], { label: string; color: string
 }
 
 export function MealsPage() {
-  const { meals, loading, addMeal, updateMeal, deleteMeal, totalCalories } = useMeals(today)
+  const { meals, loading, addMeal, updateMeal, deleteMeal, totalCalories, aiErrors, estimateNutrition } = useMeals(today)
   const [mealType, setMealType] = useState<DailyMeal['meal_type']>('desayuno')
   const [description, setDescription] = useState('')
   const [showNutrition, setShowNutrition] = useState(false)
@@ -129,7 +129,7 @@ export function MealsPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
               <span className="text-sm text-gray-400">{imageFile ? imageFile.name : 'Agregar foto de la comida'}</span>
-              <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleImageChange} />
+              <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
             </label>
             {imagePreview && (
               <div className="relative">
@@ -229,7 +229,15 @@ export function MealsPage() {
                         <p className="text-xs text-gray-400 mt-1.5">
                           {meal.ai_processed
                             ? `${Math.round(meal.calories_estimated ?? 0)} kcal · P ${meal.protein_g ?? 0}g · C ${meal.carbs_g ?? 0}g · G ${meal.fat_g ?? 0}g`
-                            : '⏳ Calculando nutrición...'}
+                            : aiErrors[meal.id]
+                              ? <span className="text-red-400 flex items-center gap-1.5">
+                                  ⚠️ Error al calcular
+                                  <button
+                                    onClick={() => estimateNutrition(meal)}
+                                    className="underline hover:text-red-600 transition-colors"
+                                  >Reintentar</button>
+                                </span>
+                              : '⏳ Calculando nutrición...'}
                         </p>
                       </div>
                       <div className="flex gap-0.5 shrink-0">
