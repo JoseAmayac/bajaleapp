@@ -216,29 +216,34 @@ export function MealsPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex justify-between items-start gap-3">
-                    <div className="flex-1 min-w-0">
-                      <span className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full mb-1.5 ${meta.color}`}>
-                        {meta.label}
-                      </span>
-                      <p className="text-[15px] text-gray-800 leading-snug">{meal.description}</p>
-                      <p className="text-xs text-gray-400 mt-1.5">
-                        {meal.ai_processed
-                          ? `${Math.round(meal.calories_estimated ?? 0)} kcal · P ${meal.protein_g ?? 0}g · C ${meal.carbs_g ?? 0}g · G ${meal.fat_g ?? 0}g`
-                          : '⏳ Calculando nutrición...'}
-                      </p>
-                    </div>
-                    <div className="flex gap-0.5 shrink-0">
-                      <button onClick={() => startEdit(meal)} className="p-2 text-gray-300 hover:text-gray-500 rounded-xl hover:bg-gray-50 transition-colors">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
-                      <button onClick={() => deleteMeal(meal.id)} className="p-2 text-gray-300 hover:text-red-400 rounded-xl hover:bg-red-50 transition-colors">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
+                  <div className="flex flex-col gap-2">
+                    {meal.signed_url && (
+                      <img src={meal.signed_url} alt="foto comida" className="w-full h-36 object-cover rounded-xl" />
+                    )}
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <span className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full mb-1.5 ${meta.color}`}>
+                          {meta.label}
+                        </span>
+                        <p className="text-[15px] text-gray-800 leading-snug">{meal.description}</p>
+                        <p className="text-xs text-gray-400 mt-1.5">
+                          {meal.ai_processed
+                            ? `${Math.round(meal.calories_estimated ?? 0)} kcal · P ${meal.protein_g ?? 0}g · C ${meal.carbs_g ?? 0}g · G ${meal.fat_g ?? 0}g`
+                            : '⏳ Calculando nutrición...'}
+                        </p>
+                      </div>
+                      <div className="flex gap-0.5 shrink-0">
+                        <button onClick={() => startEdit(meal)} className="p-2 text-gray-300 hover:text-gray-500 rounded-xl hover:bg-gray-50 transition-colors">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button onClick={() => deleteMeal(meal.id)} className="p-2 text-gray-300 hover:text-red-400 rounded-xl hover:bg-red-50 transition-colors">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}

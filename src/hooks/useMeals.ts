@@ -3,8 +3,24 @@ import { supabase } from '../lib/supabase'
 import type { DailyMeal } from '../types'
 
 export function useMeals(date: string) {
-  const [meals, setMeals] = useState<DailyMeal[]>([])
+  const [meals, setMeals] = useState<(DailyMeal & { signed_url?: string })[]>([])
   const [loading, setLoading] = useState(true)
+
+  const getSignedUrls = async (rows: DailyMeal[]) => {
+    const withImages = rows.filter(m => m.image_url)
+    if (!withImages.length) return rows.map(m => ({ ...m, signed_url: undefined }))
+
+    const signed = await Promise.all(
+      withImages.map(m =>
+        supabase.storage.from('meal-images').createSignedUrl(m.image_url!, 3600)
+      )
+    )
+
+    return rows.map((m, i) => {
+      const idx = withImages.findIndex(w => w.id === m.id)
+      return { ...m, signed_url: idx >= 0 ? (signed[idx].data?.signedUrl ?? undefined) : undefined }
+    })
+  }
 
   const fetch = useCallback(async () => {
     const { data } = await supabase
@@ -12,7 +28,8 @@ export function useMeals(date: string) {
       .select('*')
       .eq('meal_date', date)
       .order('created_at', { ascending: true })
-    setMeals(data ?? [])
+    const rows = data ?? []
+    setMeals(await getSignedUrls(rows))
     setLoading(false)
   }, [date])
 
@@ -33,10 +50,23 @@ export function useMeals(date: string) {
 
     const hasManualNutrition = meal.calories_estimated != null
 
+    // Subir imagen al bucket si existe
+    let image_url: string | null = null
+    if (image_base64) {
+      const ext = image_mime_type === 'image/png' ? 'png' : 'jpg'
+      const path = `${user!.id}/${date}-${Date.now()}.${ext}`
+      const bytes = Uint8Array.from(atob(image_base64), c => c.charCodeAt(0))
+      const { error: uploadError } = await supabase.storage
+        .from('meal-images')
+        .upload(path, bytes, { contentType: image_mime_type ?? 'image/jpeg' })
+      if (!uploadError) image_url = path
+    }
+
     const { data, error } = await supabase
       .from('daily_meals')
       .insert({
         ...mealData,
+        image_url,
         meal_date: date,
         user_id: user!.id,
         ai_processed: hasManualNutrition,
@@ -51,7 +81,7 @@ export function useMeals(date: string) {
     // Solo llamar a la IA si el usuario no ingresó calorías manualmente
     if (!hasManualNutrition) {
       supabase.functions.invoke('estimate-nutrition', {
-        body: { meal_id: data.id, description: data.description, image_base64, image_mime_type },
+        body: { meal_id: data.id, description: data.description, image_url: data.image_url },
       }).then(() => fetch())
     }
   }

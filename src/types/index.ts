@@ -23,6 +23,7 @@ export interface DailyMeal {
   carbs_g: number | null
   fat_g: number | null
   ai_processed: boolean
+  image_url: string | null
   created_at: string
 }
 
