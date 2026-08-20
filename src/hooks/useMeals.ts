@@ -24,8 +24,11 @@ export function useMeals(date: string) {
       protein_g?: number | null
       carbs_g?: number | null
       fat_g?: number | null
+      image_base64?: string | null
+      image_mime_type?: string | null
     }
   ) => {
+    const { image_base64, image_mime_type, ...mealData } = meal
     const { data: { user } } = await supabase.auth.getUser()
 
     const hasManualNutrition = meal.calories_estimated != null
@@ -33,7 +36,7 @@ export function useMeals(date: string) {
     const { data, error } = await supabase
       .from('daily_meals')
       .insert({
-        ...meal,
+        ...mealData,
         meal_date: date,
         user_id: user!.id,
         ai_processed: hasManualNutrition,
@@ -48,7 +51,7 @@ export function useMeals(date: string) {
     // Solo llamar a la IA si el usuario no ingresó calorías manualmente
     if (!hasManualNutrition) {
       supabase.functions.invoke('estimate-nutrition', {
-        body: { meal_id: data.id, description: data.description },
+        body: { meal_id: data.id, description: data.description, image_base64, image_mime_type },
       }).then(() => fetch())
     }
   }

@@ -25,14 +25,45 @@ export function MealsPage() {
   const [carbs, setCarbs] = useState('')
   const [fat, setFat] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editDesc, setEditDesc] = useState('')
   const [editType, setEditType] = useState<DailyMeal['meal_type']>('desayuno')
+
+  const compressImage = (file: File, maxPx = 1024, quality = 0.82): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const img = new Image()
+      img.onload = () => {
+        const scale = Math.min(1, maxPx / Math.max(img.width, img.height))
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.round(img.width * scale)
+        canvas.height = Math.round(img.height * scale)
+        canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+        // dataURL → base64 puro (sin el prefijo "data:image/jpeg;base64,")
+        resolve(canvas.toDataURL('image/jpeg', quality).split(',')[1])
+      }
+      img.onerror = reject
+      img.src = URL.createObjectURL(file)
+    })
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null
+    setImageFile(file)
+    setImagePreview(file ? URL.createObjectURL(file) : null)
+  }
 
   const handleAdd = async (e: FormEvent) => {
     e.preventDefault()
     if (!description.trim()) return
     setSubmitting(true)
+
+    let image_base64: string | null = null
+    const image_mime_type = imageFile ? 'image/jpeg' : null
+    if (imageFile) {
+      image_base64 = await compressImage(imageFile)
+    }
+
     await addMeal({
       meal_type: mealType,
       description: description.trim(),
@@ -40,12 +71,16 @@ export function MealsPage() {
       protein_g: protein ? parseFloat(protein) : null,
       carbs_g: carbs ? parseFloat(carbs) : null,
       fat_g: fat ? parseFloat(fat) : null,
+      image_base64,
+      image_mime_type,
     })
     setDescription('')
     setCalories('')
     setProtein('')
     setCarbs('')
     setFat('')
+    setImageFile(null)
+    setImagePreview(null)
     setShowNutrition(false)
     setSubmitting(false)
   }
@@ -84,6 +119,24 @@ export function MealsPage() {
               onChange={e => setDescription(e.target.value)}
               required
             />
+          </div>
+          {/* Imagen opcional */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold uppercase tracking-wide text-gray-400">Foto (opcional)</label>
+            <label className="flex items-center gap-2 cursor-pointer rounded-xl border border-dashed border-gray-200 bg-gray-50 px-3.5 py-3 hover:border-emerald-400 hover:bg-emerald-50 transition-colors">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5 text-gray-400 shrink-0">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span className="text-sm text-gray-400">{imageFile ? imageFile.name : 'Agregar foto de la comida'}</span>
+              <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleImageChange} />
+            </label>
+            {imagePreview && (
+              <div className="relative">
+                <img src={imagePreview} alt="preview" className="w-full h-36 object-cover rounded-xl" />
+                <button type="button" onClick={() => { setImageFile(null); setImagePreview(null) }} className="absolute top-1.5 right-1.5 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">✕</button>
+              </div>
+            )}
           </div>
           {/* Toggle nutrición manual */}
           <button
